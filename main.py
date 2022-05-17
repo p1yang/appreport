@@ -8,7 +8,7 @@ import requests
 import re
 import urllib
 import time
-
+#
 kuchuan_search_app = "https://android.kuchuan.com/searchappallmarket?kw={}&page=1&count=20&market=0&date={}"
 kuchuan_search_appInfo = "https://android.kuchuan.com/totaldownload?packagename={}&date={}"
 kuchaun_search_developer = "https://android.kuchuan.com/page/detail/download?package={}&infomarketid=10&site=0#!/sum/{}"
