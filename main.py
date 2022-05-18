@@ -4,19 +4,30 @@
 #@File: main.py
 #@Time: 2022/05/17 08:36:02
 import os
+from pydoc import Doc
+from telnetlib import DO
+from click import style
 import requests
 import re
 import urllib
 import time
+from docx import Document
+
 #
 kuchuan_search_app = "https://android.kuchuan.com/searchappallmarket?kw={}&page=1&count=20&market=0&date={}"
 kuchuan_search_appInfo = "https://android.kuchuan.com/totaldownload?packagename={}&date={}"
-kuchaun_search_developer = "https://android.kuchuan.com/page/detail/download?package={}&infomarketid=10&site=0#!/sum/{}"
+kuchuan_search_developer = "https://android.kuchuan.com/page/detail/download?package={}&infomarketid=10&site=0#!/sum/{}"
+kuchuan_info = "https://android.kuchuan.com/page/detail/download?package={}&infomarketid=1&site=0#!/sum/{}"
 app_name = "" #软件名
-package_name = "" #包名
 app_version = "" #版本
+app_hash = "" #hash
+package_name = "" #包名
 totla_downloads = 0 #下载量
 developer = "" #开发商名称
+leak_type = "" #漏洞类型，需要自行填写
+is_open = "" #发布情况
+hazard_level = ""#危害等级
+addr = "" #所属省份
 
 def getDate():
     date = int( round(time.time() * 1000)) - int(int(time.time() - time.timezone) % 86400)*1000
@@ -27,7 +38,7 @@ def getTotalDownloads():
     url = kuchuan_search_appInfo.format(package_name,getDate())
     head_data = {
         'Accept': 'application/json, text/plain, */*',
-        'Cookie': 'JSESSIONID=czmd4fxnl5057gt5du2xbg53; sign=FQ1lTeQ1fvPR5bbXOBo%2FSC2ImoHs5cgIOwP%2FE0H1GV9TZ6GH27yPxmhqCenid9SBSaMzn4IdEDMllFjWI5KDZ2WmokCm4%2BEQ7d8OYkbfVLcgw3V0xeyxsWdv5wFUJoaFquHZ9T7%2FGCUVY2OL4mkrPzoZ93zoYr1FsvwCekGG6tM%3D; token=5e651bc936be208f3d064df3cb70daff; _ga=GA1.2.1848213340.1652690100; _gid=GA1.2.1156197270.1652690100; Hm_lpvt_ef5592497ef84b441c6f40f98ada9c4f=1652698279; Hm_lvt_ef5592497ef84b441c6f40f98ada9c4f=1652690097; Hm_lpvt_84ee2face82d86b7584b5bbee44dfbe7=1652698279; Hm_lvt_84ee2face82d86b7584b5bbee44dfbe7=1652689992; CNZZDATA1257619731=708008061-1652680487-https%253A%252F%252Fios.kuchuan.com%252F%7C1652691308; CNZZDATA1260525360=2013768316-1652680496-https%253A%252F%252Fios.kuchuan.com%252F%7C1652691384; CNZZDATA5103679=cnzz_eid%3D77776780-1652681561-https%253A%252F%252Fios.kuchuan.com%252F%26ntime%3D1652692362; accessId=a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900; pageViewNum=26; qimo_seokeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=; qimo_seosource_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E7%AB%99%E5%86%85; qimo_xstKeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=; href=https%3A%2F%2Fandroid.kuchuan.com%2Fpage%2Fdetail%2FsearchResult%3Fkw%3D%25E8%25B1%25AB%25E4%25B8%258A%25E8%25A3%2585%26site%3D0%26marketId%3D0; UM_distinctid=180cbfff87121d-0f40ca97baa516-3a62684b-13c680-180cbfff8724ed; uniqueId=daa491ba33f54d68b40d1390b9d57cef',
+        'Cookie': 'sign=Bvm8IuYCoa3V%2BWAkK7B3ZIRk8YmTFp2JsVNjN3aG3KHixvMGDZhODl%2FDtkbzQEA%2FTucc51R8NMeqo7T6BDCM%2FOJVBM8SUT9AZkOU8IW3tYmGgbi%2BsTlaUWYdaaqqdkrr3RjsAk2jlrs9%2FFTeaRkclWbGkUh%2BjdosdCuLnkp9FHE%3D; token=97365f64863924b85895bf08512ae318; _ga=GA1.2.1848213340.1652690100; _gid=GA1.2.1156197270.1652690100; Hm_lpvt_ef5592497ef84b441c6f40f98ada9c4f=1652759163; Hm_lvt_ef5592497ef84b441c6f40f98ada9c4f=1652690097,1652756156; Hm_lpvt_84ee2face82d86b7584b5bbee44dfbe7=1652759163; Hm_lvt_84ee2face82d86b7584b5bbee44dfbe7=1652689992,1652756135; CNZZDATA1257619731=708008061-1652680487-https%253A%252F%252Fios.kuchuan.com%252F%7C1652758660; CNZZDATA1260525360=2013768316-1652680496-https%253A%252F%252Fios.kuchuan.com%252F%7C1652759065; CNZZDATA5103679=cnzz_eid%3D77776780-1652681561-https%253A%252F%252Fios.kuchuan.com%252F%26ntime%3D1652758660; accessId=a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900; pageViewNum=34; qimo_seokeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E6%9C%AA%E7%9F%A5; qimo_seosource_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E5%85%B6%E4%BB%96%E7%BD%91%E7%AB%99; qimo_xstKeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=; _gat=1; _Coolchuan_com_session=HIIK8m9RDfLaZQKJdf%2BQ7vy3i%2FJvHrzxD3AJMvs9Yhl6icfT7JE3zv3bf4F0S5EKbqCNxdsIZg0pOX7UM6asc2oWe27Z6hQq43lUX6X%2FUpGf4U%2Fb2egQl%2Bd9YnANS%2FvQtZhoGacbYbJG2NBBkqagVS4NGu9fPVx0U4TfNvWuMNg%3D; uid=897366; uname=17550953521; _qddaz=QD.6093k.3lnrnj.l39m3m4q; JSESSIONID=uokvxkxcyddv14109a4bgzswq; JSESSIONID=2kw5z7oy0u851is7sz0qtcvcv; href=https%3A%2F%2Fandroid.kuchuan.com%2Fpage%2Fdetail%2FsearchResult%3Fkw%3D%25E8%25B1%25AB%25E7%2595%2585%25E6%25B4%2597%25E5%2590%25A7%26site%3D0%26marketId%3D0; UM_distinctid=180cbfff87121d-0f40ca97baa516-3a62684b-13c680-180cbfff8724ed; uniqueId=daa491ba33f54d68b40d1390b9d57cef',
         'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
         'Host': 'android.kuchuan.com',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15',
@@ -44,12 +55,13 @@ def getTotalDownloads():
         downloads += nums[num]
     return downloads
 
+
 #获取软件包名
 def getPackageName():
     app_name_hex = urllib.parse.quote(app_name)
     head_data = {
         "Accept": "application/json, text/plain, */*",
-        "Cookie": "sign=B%2BUrf3c7Rsuv%2B8WooKRvagI5flXNeCgXyGlpISdfz78XPGpR1cEjXNl3I5THa8z0bhPFrWHC1BSfcHhtXNah%2FRIkmTNr4wgElTLdVMpNA05S%2FCv21G0LF18INd8g9TPyvberAadcnK03nHzvWMBrjW0zb9EfHwXvuQYCpHYPjGA%3D; token=1156208a52c308ac47822f96aab49b7d; _ga=GA1.2.1848213340.1652690100; _gid=GA1.2.1156197270.1652690100; Hm_lpvt_ef5592497ef84b441c6f40f98ada9c4f=1652695220; Hm_lvt_ef5592497ef84b441c6f40f98ada9c4f=1652690097; Hm_lpvt_84ee2face82d86b7584b5bbee44dfbe7=1652695220; Hm_lvt_84ee2face82d86b7584b5bbee44dfbe7=1652689992; CNZZDATA1257619731=708008061-1652680487-https%253A%252F%252Fios.kuchuan.com%252F%7C1652691308; CNZZDATA1260525360=2013768316-1652680496-https%253A%252F%252Fios.kuchuan.com%252F%7C1652691384; CNZZDATA5103679=cnzz_eid%3D77776780-1652681561-https%253A%252F%252Fios.kuchuan.com%252F%26ntime%3D1652692362; JSESSIONID=dvif117fdomc1u3p6osmozrmk; accessId=a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900; pageViewNum=22; qimo_seokeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=; qimo_seosource_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E7%AB%99%E5%86%85; qimo_xstKeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=; href=https%3A%2F%2Fandroid.kuchuan.com%2Fpage%2Fdetail%2FsearchResult%3Fkw%3D%25E8%25B1%25AB%25E4%25B8%258A%25E8%25A3%2585%26site%3D0%26marketId%3D0; UM_distinctid=180cbfff87121d-0f40ca97baa516-3a62684b-13c680-180cbfff8724ed; uniqueId=daa491ba33f54d68b40d1390b9d57cef",
+        "Cookie": "sign=Bvm8IuYCoa3V%2BWAkK7B3ZIRk8YmTFp2JsVNjN3aG3KHixvMGDZhODl%2FDtkbzQEA%2FTucc51R8NMeqo7T6BDCM%2FOJVBM8SUT9AZkOU8IW3tYmGgbi%2BsTlaUWYdaaqqdkrr3RjsAk2jlrs9%2FFTeaRkclWbGkUh%2BjdosdCuLnkp9FHE%3D; token=97365f64863924b85895bf08512ae318; _ga=GA1.2.1848213340.1652690100; _gid=GA1.2.1156197270.1652690100; Hm_lpvt_ef5592497ef84b441c6f40f98ada9c4f=1652759163; Hm_lvt_ef5592497ef84b441c6f40f98ada9c4f=1652690097,1652756156; Hm_lpvt_84ee2face82d86b7584b5bbee44dfbe7=1652759163; Hm_lvt_84ee2face82d86b7584b5bbee44dfbe7=1652689992,1652756135; CNZZDATA1257619731=708008061-1652680487-https%253A%252F%252Fios.kuchuan.com%252F%7C1652758660; CNZZDATA1260525360=2013768316-1652680496-https%253A%252F%252Fios.kuchuan.com%252F%7C1652759065; CNZZDATA5103679=cnzz_eid%3D77776780-1652681561-https%253A%252F%252Fios.kuchuan.com%252F%26ntime%3D1652758660; accessId=a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900; pageViewNum=34; qimo_seokeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E6%9C%AA%E7%9F%A5; qimo_seosource_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E5%85%B6%E4%BB%96%E7%BD%91%E7%AB%99; qimo_xstKeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=; _gat=1; _Coolchuan_com_session=HIIK8m9RDfLaZQKJdf%2BQ7vy3i%2FJvHrzxD3AJMvs9Yhl6icfT7JE3zv3bf4F0S5EKbqCNxdsIZg0pOX7UM6asc2oWe27Z6hQq43lUX6X%2FUpGf4U%2Fb2egQl%2Bd9YnANS%2FvQtZhoGacbYbJG2NBBkqagVS4NGu9fPVx0U4TfNvWuMNg%3D; uid=897366; uname=17550953521; _qddaz=QD.6093k.3lnrnj.l39m3m4q; JSESSIONID=uokvxkxcyddv14109a4bgzswq; JSESSIONID=2kw5z7oy0u851is7sz0qtcvcv; href=https%3A%2F%2Fandroid.kuchuan.com%2Fpage%2Fdetail%2FsearchResult%3Fkw%3D%25E8%25B1%25AB%25E7%2595%2585%25E6%25B4%2597%25E5%2590%25A7%26site%3D0%26marketId%3D0; UM_distinctid=180cbfff87121d-0f40ca97baa516-3a62684b-13c680-180cbfff8724ed; uniqueId=daa491ba33f54d68b40d1390b9d57cef",
         "Accept-Language": "zh-CN,zh-Hans;q=0.9",
         "Host": "android.kuchuan.com",
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15",
@@ -71,9 +83,9 @@ def getPackageName():
 
 #获取开发商名称
 def getDeveloper():
-    url = kuchaun_search_developer.format(package_name,package_name)
+    url = kuchuan_search_developer.format(package_name,package_name)
     head_data = {
-        'Cookie': '_ga=GA1.2.1848213340.1652690100; _gid=GA1.2.1156197270.1652690100; Hm_lpvt_ef5592497ef84b441c6f40f98ada9c4f=1652698492; Hm_lvt_ef5592497ef84b441c6f40f98ada9c4f=1652690097; Hm_lpvt_84ee2face82d86b7584b5bbee44dfbe7=1652698492; Hm_lvt_84ee2face82d86b7584b5bbee44dfbe7=1652689992; CNZZDATA1257619731=708008061-1652680487-https%253A%252F%252Fios.kuchuan.com%252F%7C1652691308; CNZZDATA1260525360=2013768316-1652680496-https%253A%252F%252Fios.kuchuan.com%252F%7C1652691384; CNZZDATA5103679=cnzz_eid%3D77776780-1652681561-https%253A%252F%252Fios.kuchuan.com%252F%26ntime%3D1652692362; accessId=a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900; pageViewNum=27; JSESSIONID=c4twua3jo60bo4mvib39u90w; token=5e651bc936be208f3d064df3cb70daff; href=https%3A%2F%2Fandroid.kuchuan.com%2Fpage%2Fdetail%2FsearchResult%3Fkw%3D%25E8%25B1%25AB%25E4%25B8%258A%25E8%25A3%2585%26site%3D0%26marketId%3D0; UM_distinctid=180cbfff87121d-0f40ca97baa516-3a62684b-13c680-180cbfff8724ed; uniqueId=daa491ba33f54d68b40d1390b9d57cef',
+        'Cookie': 'sign=Bvm8IuYCoa3V%2BWAkK7B3ZIRk8YmTFp2JsVNjN3aG3KHixvMGDZhODl%2FDtkbzQEA%2FTucc51R8NMeqo7T6BDCM%2FOJVBM8SUT9AZkOU8IW3tYmGgbi%2BsTlaUWYdaaqqdkrr3RjsAk2jlrs9%2FFTeaRkclWbGkUh%2BjdosdCuLnkp9FHE%3D; token=97365f64863924b85895bf08512ae318; _ga=GA1.2.1848213340.1652690100; _gid=GA1.2.1156197270.1652690100; Hm_lpvt_ef5592497ef84b441c6f40f98ada9c4f=1652759163; Hm_lvt_ef5592497ef84b441c6f40f98ada9c4f=1652690097,1652756156; Hm_lpvt_84ee2face82d86b7584b5bbee44dfbe7=1652759163; Hm_lvt_84ee2face82d86b7584b5bbee44dfbe7=1652689992,1652756135; CNZZDATA1257619731=708008061-1652680487-https%253A%252F%252Fios.kuchuan.com%252F%7C1652758660; CNZZDATA1260525360=2013768316-1652680496-https%253A%252F%252Fios.kuchuan.com%252F%7C1652759065; CNZZDATA5103679=cnzz_eid%3D77776780-1652681561-https%253A%252F%252Fios.kuchuan.com%252F%26ntime%3D1652758660; accessId=a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900; pageViewNum=34; qimo_seokeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E6%9C%AA%E7%9F%A5; qimo_seosource_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=%E5%85%B6%E4%BB%96%E7%BD%91%E7%AB%99; qimo_xstKeywords_a1cb1fb0-0f1e-11e9-9e27-913eb5b7d900=; _gat=1; _Coolchuan_com_session=HIIK8m9RDfLaZQKJdf%2BQ7vy3i%2FJvHrzxD3AJMvs9Yhl6icfT7JE3zv3bf4F0S5EKbqCNxdsIZg0pOX7UM6asc2oWe27Z6hQq43lUX6X%2FUpGf4U%2Fb2egQl%2Bd9YnANS%2FvQtZhoGacbYbJG2NBBkqagVS4NGu9fPVx0U4TfNvWuMNg%3D; uid=897366; uname=17550953521; _qddaz=QD.6093k.3lnrnj.l39m3m4q; JSESSIONID=uokvxkxcyddv14109a4bgzswq; JSESSIONID=2kw5z7oy0u851is7sz0qtcvcv; href=https%3A%2F%2Fandroid.kuchuan.com%2Fpage%2Fdetail%2FsearchResult%3Fkw%3D%25E8%25B1%25AB%25E7%2595%2585%25E6%25B4%2597%25E5%2590%25A7%26site%3D0%26marketId%3D0; UM_distinctid=180cbfff87121d-0f40ca97baa516-3a62684b-13c680-180cbfff8724ed; uniqueId=daa491ba33f54d68b40d1390b9d57cef',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Host': 'android.kuchuan.com',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15',
@@ -85,22 +97,60 @@ def getDeveloper():
     s = re.findall(r'"developer":"[\u4e00-\u9fa5]+"',data)
     return s[0].split('"')[-2]
 
+#获取hash，使用的是md5
+def getHash(fileName):
+    res = os.popen("md5 "+fileName).read()
+    return res[res.index("=")+2:-1]
+    
+def printInfo():
+    print("[软件名]："+app_name)        
+    print("[软件版本]："+app_version)
+    print("[软件哈希]："+app_hash)
+    print("[软件包名]："+package_name)
+    print("[下载量]："+str(totla_downloads))
+    print("[开发商]："+developer)
+
+def createReport():
+    newDoc = Document()
+    newDoc.add_heading("{} {}APP {}版本存在{}问题".format(developer,app_name,app_version,leak_type),level=0)
+    newDoc.add_paragraph("一、受影响产品名称：{}{}APP {} 安卓版".format(developer,app_name,app_version))
+    newDoc.add_paragraph("二、网络产品提供者/影响企业的所属省份：{}".format(addr))
+    newDoc.add_paragraph("三、APP包名：{}".format(package_name))
+    newDoc.add_paragraph("四、APP哈希值：MD5:{}".format(app_hash))
+    newDoc.add_paragraph("五、漏洞成因类型：{}问题".format(leak_type))
+    newDoc.add_paragraph("六、发布情况：{}".format(is_open))
+    newDoc.add_paragraph("七、危害等级：{}".format(hazard_level))
+    newDoc.add_paragraph("八、总下载量：{}".format(str(totla_downloads)))
+    newDoc.add_paragraph("这里放截图")
+    newDoc.add_paragraph("九、漏洞简介\n")
+    newDoc.save("{}/{}存在{}问题.docx".format(app_name,app_name,leak_type))
+
 if __name__ == "__main__":
+    print("[*]开始获取app信息")
     s = os.listdir()
+    name = ""
     for i in s:
         if ".apk" in i:
+            name = i
             app_name = i[:i.index("_")]
             app_version = i[i.index("_")+1:i.index("apk")-1]
-    print(app_name)        
-    print(app_version)
+            app_hash = getHash(i)
+            break
     package_name = getPackageName()
     if package_name != "":
-        
         totla_downloads = getTotalDownloads()
         developer = getDeveloper()
-        print(package_name)
-        print(totla_downloads)
-        print(developer)
-    
     else:
         print("未查到该软件，请手动查询")
+    printInfo()
+    print("下面请输入其他信息")
+    addr = input("[所属省份]：")
+    leak_type = input("[漏洞类型]：")
+    is_open = input("[发布情况]：")
+    hazard_level = input("[危害等级]：")
+    print("[*]开始生成报告")
+    os.mkdir(app_name)
+    createReport()
+    os.system("mv {} ./{}/".format(i,app_name))
+    print("[*]报告生成完毕，手动补充漏洞截图和简介")
+    print(kuchuan_info.format(package_name,package_name))
